@@ -59,12 +59,6 @@ df.printSchema() # comment this line when rendering the submission
 df.show(5)
 ```
 
-```{python}
-# Histogram of Salary Distribution
-fig = px.histogram(df.toPandas(), x="SALARY", nbins=50, title="SalaryDistribution")
-fig.update_layout(bargap0.1)
-```
-
 
 # Data Preparation
 ```{python}
@@ -85,17 +79,30 @@ def compute_median(sdf, col_name):
 
 median_from = compute_median(df, "SALARY_FROM")
 median_to = compute_median(df, "SALARY_TO")
+median_salary = compute_median(df, "SALARY")
 
-print("Medians:", median_from, median_to)
+print("Medians:", median_from, median_to, median_salary)
 
 # Step 3: Imputing missing salaries, but not experience
-impute = {}
-if median_from is not None:
-    impute["SALARY_FROM"] = median_from
-if median_to is not None:
-    impute["SALARY_TO"] = median_to
-if impute:
-    df = df.fillna(impute)
+df = df.fillna({
+    "SALARY_FROM" : median_from,
+    "SALARY_TO" : median_to,
+    "SALARY" : median_salary
+})
+df_filtered = df.filter(
+    (F.col("SALARY") > 0) &
+    F.col("EMPLOYMENT_TYPE_NAME").isNotNull() &
+    (F.trim(F.col("EMPLOYMENT_TYPE_NAME")) != F.lit("")) &
+    (F.lower(F.trim(F.col("EMPLOYMENT_TYPE_NAME"))) != F.lit("none"))
+)
+
+pdf = (
+    df_filtered
+      .select("EMPLOYMENT_TYPE_NAME", "SALARY")
+      .toPandas()
+)
+
+
 
 # Step 5: Computing average salary
 df = df.withColumn("Average_Salary", (col("SALARY_FROM") + col("SALARY_TO")) / 2)
@@ -106,8 +113,10 @@ export_cols = [
   "REMOTE_TYPE_NAME",
   "MAX_YEARS_EXPERIENCE",
   "Average_Salary",
+  "median_salary"
   "LOT_V6_SPECIALIZED_OCCUPATION_NAME",
 ]
+
 df_selected = df.select(*[c for c in export_cols if c in df.columns])
 
 # Step 7: Saving to CSV
@@ -117,6 +126,98 @@ pdf.to_csv("./data/lightcast_cleaned.csv", index=False)
 print("Data Cleaning Complete. Rows retained:", len(pdf))
 ```
 
+# Salary Distribution by Industry and Employment Type
+```{python}
+# Salary Distribution by Industry and Employment Type
+
+import os, re
+import pandas as pd
+import plotly.express as px
+from IPython.display import display
+
+# Ensure output folder exists
+os.makedirs("output", exist_ok=True)
+
+# 1) Filter out missing or zero salary values and bring to pandas
+pdf = (
+    df.filter(df["SALARY"] > 0)    # PySpark filter (assumes SALARY is numeric)
+      .select("EMPLOYMENT_TYPE_NAME", "SALARY")
+      .toPandas()
+)
+
+# Optional one-time preview (set True to debug)
+SHOW_PREVIEW = False
+if SHOW_PREVIEW:
+    display(pdf.head(10))
+
+# 2) Clean employment type names (overwrite the SAME column; no new column)
+pdf["EMPLOYMENT_TYPE_NAME"] = (
+    pdf["EMPLOYMENT_TYPE_NAME"]
+      .astype(str)
+      .apply(lambda x: re.sub(r"[^\x00-\x7F]+", "", x))
+)
+
+# Make sure salary is numeric (just in case)
+pdf["SALARY"] = pd.to_numeric(pdf["SALARY"], errors="coerce")
+
+# If a stray pluralized column exists from earlier runs, drop it
+if "EMPLOYMENT_TYPE_NAMES" in pdf.columns:
+    pdf = pdf.drop(columns=["EMPLOYMENT_TYPE_NAMES"])
+
+# 3) Compute median salary for sorting
+median_salaries = pdf.groupby("EMPLOYMENT_TYPE_NAME", dropna=False)["SALARY"].median()
+
+# 4) Sort employment types based on median salary (descending)
+sorted_employment_types = median_salaries.sort_values(ascending=False).index
+
+# 5) Apply sorted categories
+pdf["EMPLOYMENT_TYPE_NAME"] = pd.Categorical(
+    pdf["EMPLOYMENT_TYPE_NAME"],
+    categories=sorted_employment_types,
+    ordered=True
+)
+
+# 6) Create box plot (single neutral color)
+fig = px.box(
+    pdf,
+    x="EMPLOYMENT_TYPE_NAME",
+    y="SALARY",
+    title="Salary Distribution by Employment Type",
+    points="all"  # show all points
+)
+# Force black for markers and box lines
+fig.update_traces(marker_color="black", line_color="black")
+
+# 7) Improve layout, font styles, and axis labels
+fig.update_layout(
+    title=dict(text="Salary Distribution by Employment Type",
+               font=dict(size=30, family="Arial", color="black")),
+    xaxis=dict(
+        showline=True, linewidth=2, linecolor="black", mirror=True, showgrid=False,
+        categoryorder="array", categoryarray=list(sorted_employment_types)
+    ),
+    yaxis=dict(
+        title=dict(text="Salary (K $)", font=dict(size=24, family="Arial", color="black")),
+        tickvals=[0, 50000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000],
+        ticktext=["0","50K","100K","150K","200K","250K","300K","350K","400K","450K","500K"],
+        tickfont=dict(size=18, family="Arial", color="black"),
+        showline=True, linewidth=2, linecolor="black", mirror=True,
+        showgrid=True, gridcolor="lightgray", gridwidth=0.5
+    ),
+    font=dict(family="Arial", size=16, color="black"),
+    boxgap=0.7, boxmode="group",
+    plot_bgcolor="white", paper_bgcolor="white",
+    showlegend=False, height=500, width=850,
+)
+
+# In Quarto, returning fig renders it once (no need for fig.show())
+fig.show()
 
 
-
+# Save SVG (fallback to HTML if kaleido isn't installed)
+try:
+    # pip install kaleido
+    fig.write_image("output/Q1.svg", width=850, height=500, scale=1)
+except Exception:
+    fig.write_html("output/Q1.html", include_plotlyjs="cdn")
+```
