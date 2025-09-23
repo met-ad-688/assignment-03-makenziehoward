@@ -1,0 +1,60 @@
+---
+title: Assignment 03
+author:
+  - name: Makenzie Howard
+    affiliations:
+      - id: bu
+        name: Boston University
+        city: Boston
+        state: MA
+number-sections: true
+date: '2025-09-22'
+format:
+  html:
+    theme: cerulean
+    toc: true
+    toc-depth: 2
+    code-overflow: wrap
+  docx: 
+    code-overflow: wrap
+  pdf:
+    code-overflow: wrap
+date-modified: today
+date-format: long
+--- 
+
+# Load the Dataset
+
+```{python}
+#| eval: true
+#| echo: true
+#| fig-align: center
+
+import pandas as pd
+import plotly.express as px
+import plotly.io as pio
+from pyspark.sql import SparkSession
+import re
+import numpy as np
+import plotly.graph_objects as go
+from pyspark.sql.functions import col, split, explode, regexp_replace, transform, when
+from pyspark.sql import functions as F
+from pyspark.sql.functions import col, monotonically_increasing_id
+
+np.random.seed(42)
+
+pio.renderers.default = "notebook"
+
+# Initialize Spark Session
+spark = SparkSession.builder.appName("LightcastData").getOrCreate()
+
+# Load Data
+df = spark.read.option("header", "true").option("inferSchema", "true").option("multiLine","true").option("escape", "\"").csv("lightcast_job_postings.csv")
+df.createOrReplaceTempView("job_postings")
+
+# Show Schema and Sample Data
+print("---This is Diagnostic check, No need to print it in the final doc---")
+
+df.printSchema() # comment this line when rendering the submission
+df.show(5)
+```
