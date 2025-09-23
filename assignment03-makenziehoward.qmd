@@ -58,3 +58,65 @@ print("---This is Diagnostic check, No need to print it in the final doc---")
 df.printSchema() # comment this line when rendering the submission
 df.show(5)
 ```
+
+```{python}
+# Histogram of Salary Distribution
+fig = px.histogram(df.toPandas(), x="SALARY", nbins=50, title="SalaryDistribution")
+fig.update_layout(bargap0.1)
+```
+
+
+# Data Preparation
+```{python}
+# Step 1: Casting salary and experience columns
+df = (
+    df
+    .withColumn("SALARY", col("SALARY").cast("float"))
+    .withColumn("SALARY_FROM", col("SALARY_FROM").cast("float"))
+    .withColumn("SALARY_TO", col("SALARY_TO").cast("float"))
+    .withColumn("MIN_YEARS_EXPERIENCE", col("MIN_YEARS_EXPERIENCE").cast("float"))
+    .withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
+)
+
+# Step 2: Computing medians for salary columns
+def compute_median(sdf, col_name):
+    q= sdf.approxQuantile(col_name, [0.5], 0.01)
+    return q[0] if q else None
+
+median_from = compute_median(df, "SALARY_FROM")
+median_to = compute_median(df, "SALARY_TO")
+
+print("Medians:", median_from, median_to)
+
+# Step 3: Imputing missing salaries, but not experience
+impute = {}
+if median_from is not None:
+    impute["SALARY_FROM"] = median_from
+if median_to is not None:
+    impute["SALARY_TO"] = median_to
+if impute:
+    df = df.fillna(impute)
+
+# Step 5: Computing average salary
+df = df.withColumn("Average_Salary", (col("SALARY_FROM") + col("SALARY_TO")) / 2)
+
+# Step 6: Selecting Required Columns
+export_cols = [
+  "EDUCATION_LEVELS_NAME",
+  "REMOTE_TYPE_NAME",
+  "MAX_YEARS_EXPERIENCE",
+  "Average_Salary",
+  "LOT_V6_SPECIALIZED_OCCUPATION_NAME",
+]
+df_selected = df.select(*[c for c in export_cols if c in df.columns])
+
+# Step 7: Saving to CSV
+pdf = df_selected.toPandas()   # OK for small/medium data
+pdf.to_csv("./data/lightcast_cleaned.csv", index=False)
+
+print("Data Cleaning Complete. Rows retained:", len(pdf))
+```
+
+
+
+

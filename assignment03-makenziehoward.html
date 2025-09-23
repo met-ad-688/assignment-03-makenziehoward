@@ -85,6 +85,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul class="collapse">
   <li><a href="#load-the-dataset" id="toc-load-the-dataset" class="nav-link active" data-scroll-target="#load-the-dataset"><span class="header-section-number">1</span> Load the Dataset</a></li>
+  <li><a href="#data-preparation" id="toc-data-preparation" class="nav-link" data-scroll-target="#data-preparation"><span class="header-section-number">2</span> Data Preparation</a></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="assignment03-makenziehoward.docx"><i class="bi bi-file-word"></i>MS Word</a></li><li><a href="assignment03-makenziehoward.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
 </div>
@@ -136,7 +137,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="load-the-dataset" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Load the Dataset</h1>
-<div id="42d44a15" class="cell" data-execution_count="1">
+<div id="bdefeb4d" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> plotly.express <span class="im">as</span> px</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> plotly.io <span class="im">as</span> pio</span>
@@ -169,8 +170,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
-25/09/23 17:18:42 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-[Stage 1:&gt;                                                          (0 + 1) / 1]                                                                                25/09/23 17:18:59 WARN SparkStringUtils: Truncated the string representation of a plan since it was too large. This behavior can be adjusted by setting 'spark.sql.debug.maxToStringFields'.</code></pre>
+25/09/23 20:09:17 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+[Stage 0:===========================================================(1 + 0) / 1]                                                                                [Stage 1:&gt;                                                          (0 + 1) / 1]                                                                                25/09/23 20:09:33 WARN SparkStringUtils: Truncated the string representation of a plan since it was too large. This behavior can be adjusted by setting 'spark.sql.debug.maxToStringFields'.</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>---This is Diagnostic check, No need to print it in the final doc---
@@ -322,6 +323,70 @@ root
 |cb5ca25f02bdf25c1...|        6/19/2024|   2024-06-19 07:00:00|         0|6/2/2024|6/17/2024|      15|[\n  "FreeJobBoar...|[\n  "craigslist....|[\n  "https://mod...|         []|               NULL|Comisiones de $10...|Comisiones de $10...|      6/17/2024|              15|       0|        Unclassified|      LH/GM|              false|      [\n  99\n]| [\n  "No Educatio...|           99|No Education Listed|         NULL|              NULL|              3|Part-time / full-...|                NULL|                NULL|        false| 92500|          0|          [None]|               year|   150000|      35000|{\n  "lat": 37.63...|    TW9kZXN0bywgQ0E=|  Modesto, CA|  6099|Stanislaus, CA|33700|         Modesto, CA|    6|California|           6099|      Stanislaus, CA|           6099|      Stanislaus, CA|       33700|         Modesto, CA|       33700|         Modesto, CA|    99|Unclassified Indu...|   999|Unclassified Indu...|  9999|Unclassified Indu...| 99999|Unclassified Indu...|999999|Unclassified Indu...|ET0000000000000000|       Unclassified|comisiones de por...|                  []|                  []|                  []|                     []|                  []|                  []|                  []|                  []|                  []|                  []|15-2051.01|Business Intellig...|15-2051.01|Business Intellig...|                  []|                  []|                  []|                  []|                  []|                  []|   15-0000|Computer and Math...|   15-2000|Mathematical Scie...|   15-2050|Data Scientists|   15-2051|Data Scientists|             23|Information Techn...|        231010|Business Intellig...|                  23101012|           Oracle Consultant...|                2310|     Business Intellig...|                     23101012|              Oracle Consultant...|           231010|  Business Intellig...|                   2310|        Business Intellig...|                23|   Information Techn...|15-0000|Computer and Math...|15-2000|Mathematical Scie...|15-2050|Data Scientists|15-2051|Data Scientists|             NULL|                  NULL|          99|Unclassified Indu...|         999|Unclassified Indu...|        9999|Unclassified Indu...|       99999|Unclassified Indu...|      999999|Unclassified Indu...|
 +--------------------+-----------------+----------------------+----------+--------+---------+--------+--------------------+--------------------+--------------------+-----------+-------------------+--------------------+--------------------+---------------+----------------+--------+--------------------+-----------+-------------------+----------------+---------------------+-------------+-------------------+-------------+------------------+---------------+--------------------+--------------------+--------------------+-------------+------+-----------+----------------+-------------------+---------+-----------+--------------------+--------------------+-------------+------+--------------+-----+--------------------+-----+----------+---------------+--------------------+---------------+--------------------+------------+--------------------+------------+--------------------+------+--------------------+------+--------------------+------+--------------------+------+--------------------+------+--------------------+------------------+-------------------+--------------------+--------------------+--------------------+--------------------+-----------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+----------+--------------------+----------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+----------+--------------------+----------+--------------------+----------+---------------+----------+---------------+---------------+--------------------+--------------+--------------------+--------------------------+-------------------------------+--------------------+-------------------------+-----------------------------+----------------------------------+-----------------+----------------------+-----------------------+----------------------------+------------------+-----------------------+-------+--------------------+-------+--------------------+-------+---------------+-------+---------------+-----------------+----------------------+------------+--------------------+------------+--------------------+------------+--------------------+------------+--------------------+------------+--------------------+
 only showing top 5 rows</code></pre>
+</div>
+</div>
+</section>
+<section id="data-preparation" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Data Preparation</h1>
+<div id="0be71a60" class="cell" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Casting salary and experience columns</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> (</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    df</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    .withColumn(<span class="st">"SALARY"</span>, col(<span class="st">"SALARY"</span>).cast(<span class="st">"float"</span>))</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    .withColumn(<span class="st">"SALARY_FROM"</span>, col(<span class="st">"SALARY_FROM"</span>).cast(<span class="st">"float"</span>))</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    .withColumn(<span class="st">"SALARY_TO"</span>, col(<span class="st">"SALARY_TO"</span>).cast(<span class="st">"float"</span>))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    .withColumn(<span class="st">"MIN_YEARS_EXPERIENCE"</span>, col(<span class="st">"MIN_YEARS_EXPERIENCE"</span>).cast(<span class="st">"float"</span>))</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    .withColumn(<span class="st">"MAX_YEARS_EXPERIENCE"</span>, col(<span class="st">"MAX_YEARS_EXPERIENCE"</span>).cast(<span class="st">"float"</span>))</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Computing medians for salary columns</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_median(sdf, col_name):</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    q<span class="op">=</span> sdf.approxQuantile(col_name, [<span class="fl">0.5</span>], <span class="fl">0.01</span>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> q[<span class="dv">0</span>] <span class="cf">if</span> q <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>median_from <span class="op">=</span> compute_median(df, <span class="st">"SALARY_FROM"</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>median_to <span class="op">=</span> compute_median(df, <span class="st">"SALARY_TO"</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Medians:"</span>, median_from, median_to)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: Imputing missing salaries, but not experience</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>impute <span class="op">=</span> {}</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> median_from <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    impute[<span class="st">"SALARY_FROM"</span>] <span class="op">=</span> median_from</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> median_to <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    impute[<span class="st">"SALARY_TO"</span>] <span class="op">=</span> median_to</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> impute:</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> df.fillna(impute)</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Computing average salary</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.withColumn(<span class="st">"Average_Salary"</span>, (col(<span class="st">"SALARY_FROM"</span>) <span class="op">+</span> col(<span class="st">"SALARY_TO"</span>)) <span class="op">/</span> <span class="dv">2</span>)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6: Selecting Required Columns</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>export_cols <span class="op">=</span> [</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  <span class="st">"EDUCATION_LEVELS_NAME"</span>,</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="st">"REMOTE_TYPE_NAME"</span>,</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  <span class="st">"MAX_YEARS_EXPERIENCE"</span>,</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Average_Salary"</span>,</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>  <span class="st">"LOT_V6_SPECIALIZED_OCCUPATION_NAME"</span>,</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>df_selected <span class="op">=</span> df.select(<span class="op">*</span>[c <span class="cf">for</span> c <span class="kw">in</span> export_cols <span class="cf">if</span> c <span class="kw">in</span> df.columns])</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 7: Saving to CSV</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>pdf <span class="op">=</span> df_selected.toPandas()   <span class="co"># OK for small/medium data</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>pdf.to_csv(<span class="st">"./data/lightcast_cleaned.csv"</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Data Cleaning Complete. Rows retained:"</span>, <span class="bu">len</span>(pdf))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>[Stage 3:&gt;                                                          (0 + 1) / 1]                                                                                [Stage 4:&gt;                                                          (0 + 1) / 1]                                                                                </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Medians: 87295.0 130042.0</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>[Stage 5:&gt;                                                          (0 + 1) / 1]                                                                                </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Data Cleaning Complete. Rows retained: 72498</code></pre>
 </div>
 </div>
 </section>
