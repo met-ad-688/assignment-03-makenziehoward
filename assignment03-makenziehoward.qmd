@@ -15,20 +15,21 @@ format:
     toc: true
     toc-depth: 2
     code-overflow: wrap
-  docx: 
-    code-overflow: wrap
+    df-print: paged
+  docx: default
   pdf:
     code-overflow: wrap
 date-modified: today
 date-format: long
 --- 
 
-# Load the Dataset
+ # Load the Dataset
 
 ```{python}
 #| eval: true
 #| echo: true
 #| fig-align: center
+
 
 import pandas as pd
 import plotly.express as px
@@ -59,9 +60,11 @@ df.printSchema() # comment this line when rendering the submission
 df.show(5)
 ```
 
-
 # Data Preparation
 ```{python}
+#| fig-format: png
+#| fig-dpi: 220
+
 # Step 1: Casting salary and experience columns
 df = (
     df
@@ -101,7 +104,6 @@ pdf = (
       .select("EMPLOYMENT_TYPE_NAME", "SALARY")
       .toPandas()
 )
-
 
 
 # Step 5: Computing average salary
@@ -144,7 +146,6 @@ pdf = (
       .select("EMPLOYMENT_TYPE_NAME", "SALARY")
       .toPandas()
 )
-
 
 # 2) Clean employment type names 
 pdf["EMPLOYMENT_TYPE_NAME"] = (
@@ -208,16 +209,10 @@ fig.update_layout(
     showlegend=False, height=500, width=850,
 )
 
+display(fig)
+fig.write_image("output/Q1.svg", width=850, height=500, scale=1)
 
-fig.show()
 
-
-# Save SVG 
-try:
-    # pip install kaleido
-    fig.write_image("output/Q1.svg", width=850, height=500, scale=1)
-except Exception:
-    fig.write_html("output/Q1.html", include_plotlyjs="cdn")
 ```
 ***Explanation*** This table represents salary distributions by employment type: full time, part-time, or a hybrid of both. According to the table, full-time employees make the highest salaries with part-time employees making the least. Due to its hybrid nature, full-time/part-time employees experience the broadest range of salaries.
 
@@ -226,6 +221,8 @@ except Exception:
 #| echo: true
 #| eval: true
 #| error: true
+#| fig-format: png
+#| fig-dpi: 220
 
 # Show table + interactive box chart
 
@@ -250,12 +247,10 @@ fig = px.box(
 fig.update_layout(font_family="Helvetica", title_font_size=16)
 fig.update_xaxes(tickangle=45, tickfont=dict(size=12))
 
-
 fig.show()
 
-
 os.makedirs("output", exist_ok=True)
-fig.write_html("output/naics_salary_box.html", include_plotlyjs="cdn")
+fig.write_image("output/Q2.svg", width=850, height=500, scale=1)
 ```
 
 ***Explanation*** This table represents salary distribution by industry. According to the table, Healthcare Services, Waste Management Services, and Information Services have the largest ranges of salaries while also claiming the highest salaries. 
@@ -265,6 +260,8 @@ fig.write_html("output/naics_salary_box.html", include_plotlyjs="cdn")
 #| echo: true
 #| eval: true
 #| error: true
+#| fig-format: png
+#| fig-dpi: 220
 
 #Step 1: spark SQL - Median Salary and job count per TITLE_NAME
 salary_analysis = spark.sql("""
@@ -323,9 +320,8 @@ fig.update_layout(
     )
 )
 
-
 fig.show()
-
+fig.write_image("output/Q3.svg", width=850, height=500, scale=1)
 # save artifact without kaleido
 import os
 os.makedirs("output", exist_ok=True)
@@ -344,6 +340,8 @@ except Exception:
 #| echo: true
 #| eval: true
 #| error: true
+#| fig-format: png
+#| fig-dpi: 220
 
 from pyspark.sql.functions import when, col
 import plotly.express as px
@@ -414,14 +412,14 @@ fig1.update_layout(
     yaxis=dict(gridcolor="lightgrey")
 )
 
-# ✅ Return fig1 so Quarto embeds THIS chart (don’t call fig.show())
+
 fig1.show()
+fig.write_image("output/4.svg", width=850, height=500, scale=1)
 
 # Save interactive artifact
 os.makedirs("output", exist_ok=True)
-fig1.write_html("output/q_1a_Experience_vs_Salary_by_Education_Level.html", include_plotlyjs="cdn")
+include_plotlyjs="cdn")
 ```
-
 
 ***Explanation*** This table analyzes salary by education level. It indicates that there is not an extreme discrepancy surrounding bachelor's degree holders versus higher education holders, but those with higher education beyond a bachelor's degree do tend to have higher salaries. However, years of service does not seem to generate a higher salary. Alternatively, those who have the highest salaries are earning it during the 5-10 year mark of experience in their careers. Years of experience does not necessarily translate to higher salaries, but higher education can.
 
@@ -430,7 +428,8 @@ fig1.write_html("output/q_1a_Experience_vs_Salary_by_Education_Level.html", incl
 #| echo: true
 #| eval: true
 #| error: true
-
+#| fig-format: png
+#| fig-dpi: 220
 
 from pyspark.sql.functions import col, when, lower, trim
 import plotly.express as px
@@ -505,11 +504,9 @@ fig.update_layout(
     margin=dict(t=90, r=140, b=70, l=80),
 )
 
-
 fig.show()
 
-
-fig.write_html("output/remote_scatter_all.html", include_plotlyjs="cdn")
+fig.write_image("output/Q5.svg", width=850, height=500, scale=1)
 
 ```
 ***Explanation*** This table compares experience versus salary in onsite and remote workers. Onsite and remote workers do not have much difference in salary, however, there are more remote workers that have less experience than onsite workers with more experience. This is most likely caused by several different external factors and would require further analysis.
