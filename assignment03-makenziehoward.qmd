@@ -183,28 +183,30 @@ fig = px.box(
     x="EMPLOYMENT_TYPE_NAME",
     y="SALARY",
     title="Salary Distribution by Employment Type",
-    points="all"  # show all points
+    points="all",
+    boxmode="group",
+    
 )
 # Force black for markers and box lines
-fig.update_traces(marker_color="black", line_color="black")
+fig.update_traces(marker_color="red", line_color="black")
 
 # 7) Improve layout, font styles, and axis labels
 fig.update_layout(
     title=dict(text="Salary Distribution by Employment Type",
-               font=dict(size=30, family="Arial", color="black")),
+               font=dict(size=30, family="Helvetica", color="black")),
     xaxis=dict(
         showline=True, linewidth=2, linecolor="black", mirror=True, showgrid=False,
         categoryorder="array", categoryarray=list(sorted_employment_types)
     ),
     yaxis=dict(
-        title=dict(text="Salary (K $)", font=dict(size=24, family="Arial", color="black")),
+        title=dict(text="Salary (K $)", font=dict(size=24, family="Helvetica", color="black")),
         tickvals=[0, 50000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000],
         ticktext=["0","50K","100K","150K","200K","250K","300K","350K","400K","450K","500K"],
-        tickfont=dict(size=18, family="Arial", color="black"),
+        tickfont=dict(size=18, family="Helvetica", color="black"),
         showline=True, linewidth=2, linecolor="black", mirror=True,
         showgrid=True, gridcolor="lightgray", gridwidth=0.5
     ),
-    font=dict(family="Arial", size=16, color="black"),
+    font=dict(family="Helvetica", size=16, color="black"),
     boxgap=0.7, boxmode="group",
     plot_bgcolor="white", paper_bgcolor="white",
     showlegend=False, height=500, width=850,
@@ -221,3 +223,161 @@ try:
 except Exception:
     fig.write_html("output/Q1.html", include_plotlyjs="cdn")
 ```
+***Explanation*** This table represents salary distributions by employment type: full time, part-time, or a hybrid of both. According to the table, full-time employees make the highest salaries with part-time employees making the least. Due to its hybrid nature, full-time/part-time employees experience the broadest range of salaries.
+
+```{python}
+#| eval: false
+#| echo: false
+#| fig-align: center
+pdf = df.select("NAICS2_NAME", "SALARY").toPandas()
+fig = px.box(pdf, x="NAICS2_NAME", y="SALARY", title="Salary Distribution by Industry", color_discrete_sequence=["red"])
+fig.update_layout(font_family="Helvetica", title_font_size=16)
+fig.update_xaxes(tickangle=45, tickfont=dict(size=12))
+fig.show()
+```
+***Explanation*** This table represents salary distribution by industry. According to the table, Healthcare Services, Waste Management Services, and Information Services have the largest ranges of salaries while also claiming the highest salaries. 
+
+```{python}
+#bubble graph for salary analysis by ONET Occupation Type
+#| eval:false
+#| echo:false
+
+#Step 1: spark SQL - Median Salary and job count per TITLE_NAME
+salary_analysis = spark.sql("""
+  SELECT
+    LOT_OCCUPATION_NAME AS Occupation_name,
+    PERCENTILE(SALARY, 0.5) AS Median_Salary,
+    COUNT(*) AS Job_Postings
+  FROM job_postings
+  GROUP BY LOT_OCCUPATION_NAME
+  ORDER BY Job_Postings DESC
+  LIMIT 10
+""")
+
+#step 2: convert to pandas dataframe
+salary_pd = salary_analysis.toPandas()
+salary_pd.head()
+
+#Step 3: Bubble chart using plotly
+import plotly.express as px
+
+fig = px.scatter(
+    salary_pd,
+    x="Occupation_name",
+    y="Median_Salary",
+    size="Job_Postings",
+    title="Salary Analysis by Lot Occupation Type (Bubble Chart)",
+    labels={
+          "LOT_OCCUPATION_NAME": "Lot Occupation",
+          "Median_Salary": "Median Salary",
+          "Job_Postings": "Number of Job Postings",
+    },
+    hover_name="Occupation_name",
+    size_max=60,
+    width=1000,
+    height=600,
+    color="Job_Postings",
+    color_continuous_scale="Plasma"
+)
+
+#Step 4: Layout customization
+fig.update_layout(
+    font_family="Helvetica",
+    font_size=14,
+    title_font_size=25,
+    xaxis_title="Lot Occupation",
+    yaxis_title="Median Salary",
+    plot_bgcolor="white",
+    xaxis=dict(
+        tickangle=-45,
+        showline=True,
+        linecolor="red"
+    ),
+    yaxis=dict(
+        showline=True,
+        linecolor="red"
+    )
+)
+
+# show in the doc (HTML render will display it inline)
+fig.show()
+
+# save artifact without kaleido
+import os
+os.makedirs("output", exist_ok=True)
+
+try:
+    fig.write_image("output/Q7.svg", width=1000, height=600, scale=1)
+except Exception:
+    # no kaleido? save interactive HTML instead
+    fig.write_html("output/Q7.html", include_plotlyjs="cdn")
+    print("Saved interactive HTML fallback to output/Q7.html (no kaleido).")
+```
+**Explanation** This bubble chart shows the top ten job titles by number of job postings. We can see that Business Intelligence Analysts and Data Mining Analysts, although the most abundent, do not have the highest salaries in comparison to more technical groups such as Computer System Engineers. The least amount of job postings lie in the business analyst and market research analyst positions, while also paying the lowest salaries.
+
+# Salary by Education Level
+```{python}
+#defining education level groupings
+lower_deg = ["Bachelor's", "Associate", "GED", "No Education Listed", "High School"]
+higher_deg = ["Master's degree", "PHD or professional degree"]
+
+#adding EDU_GROUP column
+df = df.withColumn(
+      "EDU_GROUP",
+      when(col("EDUCATION_LEVELS_NAME").rlike("|".join([f"(?i){deg}" for deg in lower_deg])), "Bachelor's or lower")
+      when(col("EDUCATION_LEVELS_NAME".rlike("|".join([f"(?i){deg}" for deg in higher_deg])), "Master's or PhD")
+      .otherwise("Other")
+      )
+#casting necessary columns to float
+df = df.withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
+df = df.withColumn("Average_Salary", col("Average_Salary").cast("float"))
+
+#filtering for non-null and positive values
+df = df.filter(
+    col("MAX_YEARS_EXPERIENCE").isNotNull() &
+    col("Average_Salary").isNotNull() &
+    (col("MAX_YEARS_EXPERIENCE") > 0) &
+    (col("Average_Salary") > 0)
+)
+
+#filtering for just the two education groups
+df_filtered = df.filter(col("EDU_GROUP").isin("Bachelor's or lower", "Master's or PhD"))
+
+#converting to pandas for plotting
+df_pd = df_filtered.toPandas()
+
+fig1 = px.scatter(
+    df_pd,
+    x = "MAX_YEARS_EXPERIENCE",
+    y="Average_salary",
+    color="EDU_GROUP",
+    hover_data=["LOT_V6_SPECIALIZED_OCCUPATION_NAME"],
+    title="<b>Experience vs Salary by Education Level<b>",
+    opacity=0.7,
+    color_discrete_sequence=["blue", "red"]
+)
+fig1.update_traces(marker=dict(size=7,line=dict(width=1, color="black")))
+
+fig1.update_layout(
+      plot_bgcolor="#f9f9f9",
+      paper_bgcolor="#FFF5DC",
+      font=dict(family="Helvetica", size=14),
+      title_font=dict(size=22),
+      xaxis_title="Years of Experience",
+      yaxis_title="Average Salary USD"
+      legend_title="Education Group"
+      hoverlabel=dict(bgcolor="white", font_size=13, font_family= "Helvetica"),
+      margin=dict(t=70, b=60, l=60, r=60),
+      xaxis=dict(
+        gridcolor="lightgrey",
+        tickmode='linear',
+        dtick=1
+      ),
+      yaxis=dict(gridcolor="lightgrey")
+)
+
+fig1.show()
+fig1.write_html("output/q_1a_Experience_vs_Salary_by_Education_Level.html")
+```
+
+
