@@ -126,7 +126,7 @@ pdf.to_csv("./data/lightcast_cleaned.csv", index=False)
 print("Data Cleaning Complete. Rows retained:", len(pdf))
 ```
 
-# Salary Distribution by Industry and Employment Type
+# Salary Distribution by Employment Type
 ```{python}
 # Salary Distribution by Industry and Employment Type
 
@@ -145,22 +145,18 @@ pdf = (
       .toPandas()
 )
 
-# Optional one-time preview (set True to debug)
-SHOW_PREVIEW = False
-if SHOW_PREVIEW:
-    display(pdf.head(10))
 
-# 2) Clean employment type names (overwrite the SAME column; no new column)
+# 2) Clean employment type names 
 pdf["EMPLOYMENT_TYPE_NAME"] = (
     pdf["EMPLOYMENT_TYPE_NAME"]
       .astype(str)
       .apply(lambda x: re.sub(r"[^\x00-\x7F]+", "", x))
 )
 
-# Make sure salary is numeric (just in case)
+# Make sure salary is numeric 
 pdf["SALARY"] = pd.to_numeric(pdf["SALARY"], errors="coerce")
 
-# If a stray pluralized column exists from earlier runs, drop it
+# If a stray pluralized column exists from earlier runs
 if "EMPLOYMENT_TYPE_NAMES" in pdf.columns:
     pdf = pdf.drop(columns=["EMPLOYMENT_TYPE_NAMES"])
 
@@ -177,7 +173,7 @@ pdf["EMPLOYMENT_TYPE_NAME"] = pd.Categorical(
     ordered=True
 )
 
-# 6) Create box plot (single neutral color)
+# 6) Create box plot 
 fig = px.box(
     pdf,
     x="EMPLOYMENT_TYPE_NAME",
@@ -212,11 +208,11 @@ fig.update_layout(
     showlegend=False, height=500, width=850,
 )
 
-# In Quarto, returning fig renders it once (no need for fig.show())
+
 fig.show()
 
 
-# Save SVG (fallback to HTML if kaleido isn't installed)
+# Save SVG 
 try:
     # pip install kaleido
     fig.write_image("output/Q1.svg", width=850, height=500, scale=1)
@@ -225,22 +221,50 @@ except Exception:
 ```
 ***Explanation*** This table represents salary distributions by employment type: full time, part-time, or a hybrid of both. According to the table, full-time employees make the highest salaries with part-time employees making the least. Due to its hybrid nature, full-time/part-time employees experience the broadest range of salaries.
 
+# Salary Distribution by Industry
 ```{python}
-#| eval: false
-#| echo: false
-#| fig-align: center
+#| echo: true
+#| eval: true
+#| error: true
+
+# Show table + interactive box chart
+
+import plotly.express as px
+from IPython.display import display, HTML
+import pandas as pd, os
+
+# 1) Data to pandas
 pdf = df.select("NAICS2_NAME", "SALARY").toPandas()
-fig = px.box(pdf, x="NAICS2_NAME", y="SALARY", title="Salary Distribution by Industry", color_discrete_sequence=["red"])
+
+# 1a) Force a visible HTML table preview
+display(HTML(pdf.head(15).to_html(index=False)))
+
+# 2) Plotly box chart
+fig = px.box(
+    pdf,
+    x="NAICS2_NAME",
+    y="SALARY",
+    title="Salary Distribution by Industry",
+    color_discrete_sequence=["red"]
+)
 fig.update_layout(font_family="Helvetica", title_font_size=16)
 fig.update_xaxes(tickangle=45, tickfont=dict(size=12))
+
+
 fig.show()
+
+
+os.makedirs("output", exist_ok=True)
+fig.write_html("output/naics_salary_box.html", include_plotlyjs="cdn")
 ```
+
 ***Explanation*** This table represents salary distribution by industry. According to the table, Healthcare Services, Waste Management Services, and Information Services have the largest ranges of salaries while also claiming the highest salaries. 
 
+# Salary Analysis by ONET Occupation Type (Bubble Chart)
 ```{python}
-#bubble graph for salary analysis by ONET Occupation Type
-#| eval:false
-#| echo:false
+#| echo: true
+#| eval: true
+#| error: true
 
 #Step 1: spark SQL - Median Salary and job count per TITLE_NAME
 salary_analysis = spark.sql("""
@@ -299,7 +323,7 @@ fig.update_layout(
     )
 )
 
-# show in the doc (HTML render will display it inline)
+
 fig.show()
 
 # save artifact without kaleido
@@ -313,71 +337,179 @@ except Exception:
     fig.write_html("output/Q7.html", include_plotlyjs="cdn")
     print("Saved interactive HTML fallback to output/Q7.html (no kaleido).")
 ```
-**Explanation** This bubble chart shows the top ten job titles by number of job postings. We can see that Business Intelligence Analysts and Data Mining Analysts, although the most abundent, do not have the highest salaries in comparison to more technical groups such as Computer System Engineers. The least amount of job postings lie in the business analyst and market research analyst positions, while also paying the lowest salaries.
+***Explanation*** This bubble chart shows the top ten job titles by number of job postings. We can see that Business Intelligence Analysts and Data Mining Analysts, although the most abundant, do not have the highest salaries in comparison to more technical groups such as Computer System Engineers. The least amount of job postings lie in the business analyst and market research analyst positions, while also paying the lowest salaries.
 
 # Salary by Education Level
 ```{python}
-#defining education level groupings
-lower_deg = ["Bachelor's", "Associate", "GED", "No Education Listed", "High School"]
+#| echo: true
+#| eval: true
+#| error: true
+
+from pyspark.sql.functions import when, col
+import plotly.express as px
+import pandas as pd
+import os, re
+from IPython.display import display, HTML
+
+SHOW_PREVIEW = True
+
+# Build groups
+lower_deg  = ["Bachelor's", "Associate", "GED", "No Education Listed", "High School"]
 higher_deg = ["Master's degree", "PHD or professional degree"]
+lower_pat  = "(?i)(" + "|".join(map(re.escape, lower_deg)) + ")"
+higher_pat = "(?i)(" + "|".join(map(re.escape, higher_deg)) + ")"
 
-#adding EDU_GROUP column
-df = df.withColumn(
-      "EDU_GROUP",
-      when(col("EDUCATION_LEVELS_NAME").rlike("|".join([f"(?i){deg}" for deg in lower_deg])), "Bachelor's or lower")
-      when(col("EDUCATION_LEVELS_NAME".rlike("|".join([f"(?i){deg}" for deg in higher_deg])), "Master's or PhD")
-      .otherwise("Other")
-      )
-#casting necessary columns to float
-df = df.withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
-df = df.withColumn("Average_Salary", col("Average_Salary").cast("float"))
-
-#filtering for non-null and positive values
-df = df.filter(
-    col("MAX_YEARS_EXPERIENCE").isNotNull() &
-    col("Average_Salary").isNotNull() &
-    (col("MAX_YEARS_EXPERIENCE") > 0) &
-    (col("Average_Salary") > 0)
+df2 = (
+    df.withColumn(
+        "EDU_GROUP",
+        when(col("EDUCATION_LEVELS_NAME").rlike(lower_pat),  "Bachelor's or lower")
+        .when(col("EDUCATION_LEVELS_NAME").rlike(higher_pat), "Master's or PhD")
+        .otherwise("Other")
+    )
+    .withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
+    .withColumn("Average_Salary",       col("Average_Salary").cast("float"))
+    .filter(
+        col("MAX_YEARS_EXPERIENCE").isNotNull() &
+        col("Average_Salary").isNotNull() &
+        (col("MAX_YEARS_EXPERIENCE") > 0) &
+        (col("Average_Salary") > 0)
+    )
 )
 
-#filtering for just the two education groups
-df_filtered = df.filter(col("EDU_GROUP").isin("Bachelor's or lower", "Master's or PhD"))
+df_filtered = df2.filter(col("EDU_GROUP").isin("Bachelor's or lower", "Master's or PhD"))
 
-#converting to pandas for plotting
+# To pandas
 df_pd = df_filtered.toPandas()
 
+# Optional preview table
+if SHOW_PREVIEW:
+    cols_to_show = [c for c in ["EDU_GROUP","MAX_YEARS_EXPERIENCE","Average_Salary",
+                                "LOT_V6_SPECIALIZED_OCCUPATION_NAME"] if c in df_pd.columns]
+    display(HTML(df_pd.loc[:, cols_to_show].head(10).to_html(index=False)))
+
+# Scatter plot
+hover_cols = [c for c in ["LOT_V6_SPECIALIZED_OCCUPATION_NAME"] if c in df_pd.columns]
 fig1 = px.scatter(
     df_pd,
-    x = "MAX_YEARS_EXPERIENCE",
-    y="Average_salary",
+    x="MAX_YEARS_EXPERIENCE",
+    y="Average_Salary",
     color="EDU_GROUP",
-    hover_data=["LOT_V6_SPECIALIZED_OCCUPATION_NAME"],
-    title="<b>Experience vs Salary by Education Level<b>",
+    hover_data=hover_cols,
+    title="<b>Experience vs Salary by Education Level</b>",
     opacity=0.7,
     color_discrete_sequence=["blue", "red"]
 )
-fig1.update_traces(marker=dict(size=7,line=dict(width=1, color="black")))
-
+fig1.update_traces(marker=dict(size=7, line=dict(width=1, color="black")))
 fig1.update_layout(
-      plot_bgcolor="#f9f9f9",
-      paper_bgcolor="#FFF5DC",
-      font=dict(family="Helvetica", size=14),
-      title_font=dict(size=22),
-      xaxis_title="Years of Experience",
-      yaxis_title="Average Salary USD"
-      legend_title="Education Group"
-      hoverlabel=dict(bgcolor="white", font_size=13, font_family= "Helvetica"),
-      margin=dict(t=70, b=60, l=60, r=60),
-      xaxis=dict(
-        gridcolor="lightgrey",
-        tickmode='linear',
-        dtick=1
-      ),
-      yaxis=dict(gridcolor="lightgrey")
+    plot_bgcolor="#f9f9f9",
+    paper_bgcolor="#FFF5DC",
+    font=dict(family="Helvetica", size=14),
+    title_font=dict(size=22),
+    xaxis_title="Years of Experience",
+    yaxis_title="Average Salary (USD)",
+    legend_title="Education Group",
+    hoverlabel=dict(bgcolor="white", font_size=13, font_family="Helvetica"),
+    margin=dict(t=70, b=60, l=60, r=60),
+    xaxis=dict(gridcolor="lightgrey", tickmode="linear", dtick=1),
+    yaxis=dict(gridcolor="lightgrey")
 )
 
+# ✅ Return fig1 so Quarto embeds THIS chart (don’t call fig.show())
 fig1.show()
-fig1.write_html("output/q_1a_Experience_vs_Salary_by_Education_Level.html")
+
+# Save interactive artifact
+os.makedirs("output", exist_ok=True)
+fig1.write_html("output/q_1a_Experience_vs_Salary_by_Education_Level.html", include_plotlyjs="cdn")
 ```
 
 
+***Explanation*** This table analyzes salary by education level. It indicates that there is not an extreme discrepancy surrounding bachelor's degree holders versus higher education holders, but those with higher education beyond a bachelor's degree do tend to have higher salaries. However, years of service does not seem to generate a higher salary. Alternatively, those who have the highest salaries are earning it during the 5-10 year mark of experience in their careers. Years of experience does not necessarily translate to higher salaries, but higher education can.
+
+# Salary by Remote Work Type
+```{python}
+#| echo: true
+#| eval: true
+#| error: true
+
+
+from pyspark.sql.functions import col, when, lower, trim
+import plotly.express as px
+import numpy as np, pandas as pd, os
+from IPython.display import Markdown, display
+
+os.makedirs("output", exist_ok=True)
+np.random.seed(42)
+
+# 1) Build groups: Remote / Hybrid / Onsite (Onsite includes None/blank)
+df_remote = (
+    df.withColumn(
+        "REMOTE_GROUP",
+        when(lower(trim(col("REMOTE_TYPE_NAME"))) == "remote", "Remote")
+        .when(lower(trim(col("REMOTE_TYPE_NAME"))) == "hybrid", "Hybrid")
+        .otherwise("Onsite")
+    )
+    .withColumn("MAX_YEARS_EXPERIENCE", col("MAX_YEARS_EXPERIENCE").cast("float"))
+    .withColumn("Average_Salary",       col("Average_Salary").cast("float"))
+    .filter(
+        col("MAX_YEARS_EXPERIENCE").isNotNull() &
+        col("Average_Salary").isNotNull() &
+        (col("MAX_YEARS_EXPERIENCE") > 0) &
+        (col("Average_Salary") > 0)
+    )
+    .select("REMOTE_GROUP", "MAX_YEARS_EXPERIENCE", "Average_Salary",
+            "LOT_V6_SPECIALIZED_OCCUPATION_NAME")
+)
+
+# 2) To pandas 
+pdf = df_remote.toPandas()
+pdf["EXP_JITTER"] = (
+    pdf["MAX_YEARS_EXPERIENCE"].astype(float)
+    + np.random.uniform(-0.15, 0.15, len(pdf))
+).clip(lower=0)
+
+# 3) y axis
+def _round_up(x, base=50000):
+    return int(base * np.ceil(max(x, 1) / base))
+ymax = _round_up(float(pdf["Average_Salary"].max()) if len(pdf) else 50000, 50000)
+yticks = list(range(0, ymax + 1, 50000))
+yticktext = [("0" if v == 0 else f"{v//1000}k") for v in yticks]
+
+# 4) colors
+cmap = {"Onsite": "#4C6EF5", "Remote": "#E8590C", "Hybrid": "#2B8A3E"}  # blue, orange, green
+
+# 5) Single consolidated scatter
+fig = px.scatter(
+    pdf,
+    x="EXP_JITTER",
+    y="Average_Salary",
+    color="REMOTE_GROUP",
+    hover_data=["LOT_V6_SPECIALIZED_OCCUPATION_NAME", "MAX_YEARS_EXPERIENCE"],
+    title="Experience vs Salary by Remote Work Type",
+    opacity=0.7,
+    color_discrete_map=cmap
+)
+
+# marker outlines + layout 
+fig.update_traces(marker=dict(size=8, line=dict(width=1, color="black")))
+fig.update_layout(
+    font=dict(family="Helvetica", size=16, color="#1c2a39"),
+    title_font=dict(size=34),
+    legend_title="Remote Work Type",
+    legend=dict(x=1.02, y=1, bgcolor="rgba(255,255,255,0.7)"),
+    xaxis_title="Years of Experience",
+    yaxis_title="Average Salary (USD)",
+    xaxis=dict(gridcolor="#e0e0e0", tickmode="linear", dtick=1),
+    yaxis=dict(gridcolor="#e0e0e0", tickvals=yticks, ticktext=yticktext),
+    plot_bgcolor="#F3F5F7",     # inner panel
+    paper_bgcolor="#EAF6E8",    # soft green page
+    margin=dict(t=90, r=140, b=70, l=80),
+)
+
+
+fig.show()
+
+
+fig.write_html("output/remote_scatter_all.html", include_plotlyjs="cdn")
+
+```
+***Explanation*** This table compares experience versus salary in onsite and remote workers. Onsite and remote workers do not have much difference in salary, however, there are more remote workers that have less experience than onsite workers with more experience. This is most likely caused by several different external factors and would require further analysis.
